@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Квадрат — цифровая мастерская</title>
+<meta name="description" content="Обложки для YouTube, сайты, оформление Discord, резюме и презентации. Понятные цены, быстрые сроки, примеры работ.">
+<meta name="theme-color" content="#0f1b2d">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='12' fill='%230f1b2d'/><rect x='16' y='16' width='32' height='32' fill='%23ff7a1a'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,500;7..72,700&family=Inter+Tight:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: витрина услуг (сетка карточек) + выезжающая корзина справа + оформление заказа в модальном окне.
+   Палитра: глубокий чернильный синий и мандариновый акцент «квадрата». Literata — заголовки, Inter Tight — интерфейс. */
+:root {
+  --bg: #ffffff; --tint: #f2f5f9; --ink: #0f1b2d; --soft: #566275; --line: #dfe5ee; --accent: #ff7a1a; --accent-ink: #1a0d00; --ok: #11845b; --err: #c8331f;
+  --serif: "Literata", Georgia, serif; --sans: "Inter Tight", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #0b1320; --tint: #121c2c; --ink: #e9eef6; --soft: #9aa7ba; --line: #22304a; --accent: #ff8a33; --ok: #3ccf91; --err: #ff7a66; color-scheme: dark; } }
+:root[data-theme="dark"] { --bg: #0b1320; --tint: #121c2c; --ink: #e9eef6; --soft: #9aa7ba; --line: #22304a; --accent: #ff8a33; --ok: #3ccf91; --err: #ff7a66; color-scheme: dark; }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.55 var(--sans); }
+button, input, textarea, select { font: inherit; color: inherit; }
+a { color: inherit; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.wrap { max-width: 1160px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); }
+header { position: sticky; top: 0; z-index: 10; background: color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+header .wrap { display: flex; align-items: center; gap: 18px; height: 64px; }
+.logo { display: flex; align-items: center; gap: 10px; font: 700 21px var(--serif); text-decoration: none; }
+.sq { width: 22px; height: 22px; background: var(--accent); display: inline-block; }
+nav { display: flex; gap: 4px; margin-left: 8px; }
+nav a { text-decoration: none; color: var(--soft); padding: 6px 10px; border-radius: 6px; font-weight: 500; }
+nav a:hover { color: var(--ink); }
+.sp { flex: 1; }
+.ib { border: 1px solid var(--line); background: var(--bg); width: 40px; height: 40px; border-radius: 10px; cursor: pointer; }
+.cartBtn { position: relative; border: 0; background: var(--ink); color: var(--bg); border-radius: 10px; padding: 9px 16px; font-weight: 600; cursor: pointer; }
+.cartBtn b { display: inline-grid; place-items: center; min-width: 22px; height: 22px; border-radius: 11px; background: var(--accent); color: var(--accent-ink); font-size: 13px; margin-left: 6px; padding: 0 6px; }
+.btn { border: 0; background: var(--accent); color: var(--accent-ink); border-radius: 10px; padding: 12px 20px; font-weight: 700; cursor: pointer; text-decoration: none; display: inline-flex; gap: 8px; align-items: center; }
+.btn.dark { background: var(--ink); color: var(--bg); }
+.btn.line { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+.btn:disabled { opacity: .5; cursor: default; }
+/* hero */
+.hero { display: grid; grid-template-columns: 1.25fr 1fr; gap: 40px; align-items: center; padding: 64px 0 56px; }
+.hero h1 { font: 700 clamp(36px, 5.4vw, 64px)/1.04 var(--serif); margin: 0 0 18px; letter-spacing: -.02em; text-wrap: balance; }
+.hero h1 em { font-style: normal; box-shadow: inset 0 -.12em 0 var(--accent); }
+.hero p { color: var(--soft); font-size: 18px; max-width: 48ch; margin: 0 0 26px; }
+.hero .row { display: flex; gap: 10px; flex-wrap: wrap; }
+.steps { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+.steps li { display: grid; grid-template-columns: 44px 1fr; gap: 14px; padding: 18px 20px; border-bottom: 1px solid var(--line); background: var(--tint); }
+.steps li:last-child { border-bottom: 0; }
+.steps .n { width: 44px; height: 44px; display: grid; place-items: center; font: 700 18px var(--serif); background: var(--bg); border: 1px solid var(--line); }
+.steps b { display: block; } .steps span { color: var(--soft); font-size: 15px; }
+/* каталог */
+section { padding: 30px 0 56px; }
+h2 { font: 700 clamp(26px, 3.4vw, 38px)/1.1 var(--serif); margin: 0 0 8px; letter-spacing: -.01em; }
+.lead { color: var(--soft); margin: 0 0 22px; max-width: 60ch; }
+.filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 20px; }
+.f { border: 1px solid var(--line); background: var(--bg); border-radius: 999px; padding: 7px 14px; cursor: pointer; font-weight: 500; color: var(--soft); }
+.f.on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+.prod { border: 1px solid var(--line); border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; background: var(--bg); }
+.art { aspect-ratio: 16 / 9; max-width: 100%; position: relative; overflow: hidden; display: grid; place-items: center; font: 700 clamp(28px, 3vw, 40px) var(--serif); letter-spacing: -.01em; text-shadow: 0 2px 12px rgba(0,0,0,.25); color: #fff; text-align: center; padding: 16px; }
+.art small { position: absolute; left: 12px; top: 12px; font: 600 11px var(--sans); letter-spacing: .08em; text-transform: uppercase; background: rgba(0,0,0,.35); padding: 3px 8px; border-radius: 6px; }
+.prod .body { padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+.prod h3 { margin: 0; font-size: 18px; }
+.prod p { margin: 0; color: var(--soft); font-size: 15px; flex: 1; }
+.prod .meta { display: flex; gap: 12px; font-size: 13px; color: var(--soft); }
+.prod .buy { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 6px; }
+.price { font: 700 22px var(--serif); font-variant-numeric: tabular-nums; }
+.price s { font: 500 14px var(--sans); color: var(--soft); margin-left: 6px; }
+.more { background: none; border: 0; color: var(--soft); text-decoration: underline; cursor: pointer; padding: 0; font-size: 14px; text-align: left; }
+/* портфолио */
+.port { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+.port a { border: 1px solid var(--line); border-radius: 12px; padding: 16px; text-decoration: none; display: flex; flex-direction: column; gap: 4px; background: var(--tint); }
+.port a:hover { border-color: var(--accent); }
+.port small { color: var(--soft); }
+.port i { font-style: normal; color: var(--accent); font-weight: 600; font-size: 13px; }
+/* faq */
+details { border-bottom: 1px solid var(--line); padding: 14px 0; }
+summary { cursor: pointer; font-weight: 600; font-size: 17px; }
+details p { color: var(--soft); margin: 8px 0 0; max-width: 70ch; }
+/* корзина */
+.shade { position: fixed; inset: 0; background: rgba(5,10,20,.5); z-index: 30; }
+.drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(420px, 100%); background: var(--bg); z-index: 31; display: flex; flex-direction: column; box-shadow: -20px 0 50px rgba(0,0,0,.2); padding-top: env(safe-area-inset-top); }
+.drawer header { position: static; display: flex; align-items: center; padding: 16px 20px; gap: 10px; }
+.drawer h3 { margin: 0; font: 700 22px var(--serif); flex: 1; }
+.items { flex: 1; overflow: auto; padding: 8px 20px; }
+.ci { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.ci b { font-weight: 600; } .ci small { color: var(--soft); }
+.qty { display: flex; align-items: center; gap: 6px; }
+.qty button { width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); cursor: pointer; }
+.total { padding: 16px 20px max(20px, env(safe-area-inset-bottom)); border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 12px; }
+.total .row { display: flex; justify-content: space-between; font: 700 22px var(--serif); }
+.empty { color: var(--soft); text-align: center; padding: 40px 0; }
+/* модалка */
+.modal { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; padding: 16px; background: rgba(5,10,20,.55); overflow: auto; }
+.box { background: var(--bg); border-radius: 18px; max-width: 560px; width: 100%; padding: 26px; position: relative; max-height: calc(100vh - 32px); overflow: auto; }
+.box h3 { font: 700 26px var(--serif); margin: 0 0 6px; }
+.box .x { position: absolute; top: 14px; right: 14px; }
+.box ul { padding-left: 20px; color: var(--soft); }
+form { display: flex; flex-direction: column; gap: 12px; margin-top: 14px; }
+label { display: flex; flex-direction: column; gap: 4px; font-size: 14px; font-weight: 600; }
+input, textarea, select { border: 1px solid var(--line); background: var(--tint); border-radius: 10px; padding: 11px 12px; font-weight: 400; width: 100%; }
+textarea { min-height: 90px; resize: vertical; }
+.hint { color: var(--soft); font-size: 13px; font-weight: 400; }
+.order { background: var(--tint); border: 1px dashed var(--line); border-radius: 12px; padding: 14px; white-space: pre-wrap; font-size: 14px; max-height: 220px; overflow: auto; }
+.error { color: var(--err); font-size: 14px; }
+.toast { position: fixed; left: 50%; bottom: max(24px, env(safe-area-inset-bottom)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 10px; font-weight: 600; opacity: 0; transition: .2s; pointer-events: none; z-index: 50; }
+.toast.show { opacity: 1; }
+footer { border-top: 1px solid var(--line); padding: 26px 0 40px; color: var(--soft); font-size: 14px; }
+footer .wrap { display: flex; gap: 16px; justify-content: space-between; flex-wrap: wrap; }
+@media (max-width: 860px) { .hero { grid-template-columns: 1fr; padding-top: 36px; } nav { display: none; } }
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <a class="logo" href="#top"><span class="sq"></span>Квадрат</a>
+  <nav><a href="#catalog">Услуги</a><a href="#works">Работы</a><a href="#faq">Вопросы</a></nav>
+  <span class="sp"></span>
+  <button class="ib" id="theme" aria-label="Сменить тему">◐</button>
+  <button class="cartBtn" id="openCart">Корзина<b id="count">0</b></button>
+</div></header>
+
+<main class="wrap" id="top">
+  <section class="hero">
+    <div>
+      <h1>Делаю обложки, сайты и оформление, <em>которые замечают</em>.</h1>
+      <p>Цифровая мастерская для блогеров, геймеров, школьных проектов и небольших бизнесов. Фиксированные цены, понятные сроки и бесплатные правки.</p>
+      <div class="row"><a class="btn" href="#catalog">Выбрать услугу</a><a class="btn line" href="#works">Посмотреть работы</a></div>
+    </div>
+    <ol class="steps">
+      <li><span class="n">1</span><div><b>Выбираешь услугу</b><span>Добавляешь в корзину и оформляешь заявку</span></div></li>
+      <li><span class="n">2</span><div><b>Обсуждаем детали</b><span>Пишу тебе в течение дня, уточняю пожелания</span></div></li>
+      <li><span class="n">3</span><div><b>Получаешь результат</b><span>Показываю черновик, вношу правки, отдаю файлы</span></div></li>
+    </ol>
+  </section>
+
+  <section id="catalog">
+    <h2>Услуги и цены</h2>
+    <p class="lead">Цены фиксированные. Если задача необычная — опиши её в комментарии к заказу, посчитаю отдельно.</p>
+    <div class="filters" id="filters"></div>
+    <div class="grid" id="grid"></div>
+  </section>
+
+  <section id="works">
+    <h2>Работы</h2>
+    <p class="lead">Эти сайты сделаны в мастерской. Открой любой — всё работает.</p>
+    <div class="port" id="port"></div>
+  </section>
+
+  <section id="faq">
+    <h2>Вопросы</h2>
+    <details><summary>Как происходит оплата?</summary><p>После заявки я пишу тебе, мы согласуем детали и сроки. Оплата — 50% перед началом работы и 50% после того, как результат тебе понравится. Способ оплаты обсуждаем в переписке.</p></details>
+    <details><summary>Сколько правок можно?</summary><p>Две бесплатные правки входят в любую услугу. Если нужно больше — договоримся.</p></details>
+    <details><summary>Что если мне не понравится?</summary><p>Сначала я показываю черновик. Если он совсем не подошёл, можно отказаться до финальной оплаты — предоплата за начатую работу не возвращается.</p></details>
+    <details><summary>В каком виде я получу работу?</summary><p>Картинки — в PNG/JPG в хорошем качестве. Сайты — ссылкой на опубликованный сайт и архивом с файлами. Резюме и презентации — в PDF.</p></details>
+  </section>
+</main>
+
+<footer><div class="wrap"><span>© <span id="year"></span> Квадрат — цифровая мастерская</span><span>Ещё: <a href="https://strimsnaener-cpu.github.io/verstak/">Верстак</a> · <a href="https://strimsnaener-cpu.github.io/orbita/">Орбита</a></span></div></footer>
+
+<div class="shade" id="shade" hidden></div>
+<aside class="drawer" id="drawer" hidden aria-label="Корзина">
+  <header><h3>Корзина</h3><button class="ib" id="closeCart" aria-label="Закрыть">✕</button></header>
+  <div class="items" id="items"></div>
+  <div class="total"><div class="row"><span>Итого</span><span id="sum">0 ₴</span></div><button class="btn" id="checkout">Оформить заказ</button></div>
+</aside>
+
+<div class="modal" id="modal" hidden><div class="box" id="box" role="dialog" aria-modal="true"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ===== НАСТРОЙКИ МАГАЗИНА — меняй здесь ===== */
+const SHOP = {
+  telegram: "",          // твой ник в Telegram без @, например "kvadrat_studio"
+  email: "",             // почта для заказов (необязательно)
+  currency: "₴",
+};
+const PRODUCTS = [
+  { id: "yt1", cat: "Обложки", name: "Обложка для YouTube", price: 150, tag: "1280×720", days: "1 день", desc: "Яркое превью 1280×720 с крупным текстом, обводкой и твоим фото или скриншотом.", inc: ["1 обложка 1280×720", "2 правки", "Файл PNG + JPG"], art: ["#ff512f", "#dd2476"] },
+  { id: "yt5", cat: "Обложки", name: "Пакет: 5 обложек", price: 600, old: 750, tag: "× 5", days: "3 дня", desc: "Пять обложек в едином стиле — канал выглядит как у профи.", inc: ["5 обложек 1280×720", "Единый стиль и шрифты", "2 правки на каждую"], art: ["#f7971e", "#ffd200"] },
+  { id: "banner", cat: "Обложки", name: "Шапка и аватар канала", price: 300, tag: "2560×1440", days: "2 дня", desc: "Баннер для YouTube/Twitch и аватарка в одном стиле.", inc: ["Баннер 2560×1440", "Аватар 800×800", "Проверка на телефоне и ПК"], art: ["#4568dc", "#b06ab3"] },
+  { id: "card", cat: "Сайты", name: "Сайт-визитка", price: 1500, tag: "1 страница", days: "5 дней", desc: "Одностраничный сайт о тебе или твоём деле: кто ты, что делаешь, как связаться. С публикацией в интернете бесплатно.", inc: ["1 страница, адаптив под телефон", "Публикация на GitHub Pages", "Светлая и тёмная тема"], art: ["#0f2027", "#2c5364"] },
+  { id: "land", cat: "Сайты", name: "Лендинг для продаж", price: 3000, tag: "Продажи 24/7", days: "7 дней", desc: "Продающая страница с каталогом, корзиной и заявками — как этот сайт.", inc: ["До 5 блоков", "Каталог и корзина", "Публикация и инструкция, как менять цены"], art: ["#11998e", "#38ef7d"] },
+  { id: "tool", cat: "Сайты", name: "Мини-приложение", price: 2000, tag: "Своя идея", days: "5–7 дней", desc: "Калькулятор, тест, таймер или небольшая браузерная игра под твою идею.", inc: ["Работает в браузере и на телефоне", "Сохранение прогресса", "Публикация в интернете"], art: ["#1d1b4b", "#6b21a8"] },
+  { id: "discord", cat: "Оформление", name: "Оформление Discord-сервера", price: 400, tag: "Discord", days: "2 дня", desc: "Каналы, роли, правила, иконка и баннер сервера — аккуратно и по делу.", inc: ["Структура каналов и ролей", "Иконка и баннер", "Текст правил"], art: ["#5865f2", "#2b2d6e"] },
+  { id: "cv", cat: "Документы", name: "Резюме под ключ", price: 200, tag: "A4 · PDF", days: "1 день", desc: "Красивое резюме в PDF: подберу шаблон и помогу сформулировать опыт.", inc: ["1 страница A4", "PDF для отправки", "2 правки"], art: ["#244bd6", "#0b1f6b"] },
+  { id: "slides", cat: "Документы", name: "Презентация до 10 слайдов", price: 400, tag: "10 слайдов", days: "2 дня", desc: "Для урока, защиты проекта или выступления: структура, картинки, аккуратный дизайн.", inc: ["До 10 слайдов", "PDF + PowerPoint", "2 правки"], art: ["#c2410c", "#7c2d12"] },
+];
+const WORKS = [
+  ["verstak", "Верстак", "20 онлайн-инструментов"], ["zubrilka", "Зубрилка", "карточки для учёбы"], ["kopilka", "Копилка", "учёт денег и цели"],
+  ["rezume", "Резюме за 5 минут", "конструктор резюме"], ["prevyu", "Превьюшка", "редактор обложек"], ["orbita", "Орбита", "браузерная игра"],
+];
+/* ============================================ */
+(function () {
+"use strict";
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const money = (n) => n.toLocaleString("ru-RU") + " " + SHOP.currency;
+const toast = (m) => { const t = $("#toast"); t.textContent = m; t.classList.add("show"); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove("show"), 1800); };
+const load = (k, d) => { try { const v = localStorage.getItem("kv:" + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } };
+const save = (k, v) => { try { localStorage.setItem("kv:" + k, JSON.stringify(v)); } catch (e) {} };
+let cart = load("cart", {}), filter = "Все";
+const byId = (id) => PRODUCTS.find((p) => p.id === id);
+Object.keys(cart).forEach((id) => { if (!byId(id)) delete cart[id]; });
+
+function renderFilters() {
+  const cats = ["Все", ...new Set(PRODUCTS.map((p) => p.cat))];
+  $("#filters").innerHTML = cats.map((c) => `<button class="f ${c === filter ? "on" : ""}" data-f="${esc(c)}">${esc(c)}</button>`).join("");
+}
+function renderGrid() {
+  $("#grid").innerHTML = PRODUCTS.filter((p) => filter === "Все" || p.cat === filter).map((p) => `
+    <article class="prod"><div class="art" style="background:linear-gradient(135deg,${p.art[0]},${p.art[1]})"><small>${esc(p.cat)}</small>${esc(p.tag)}</div>
+    <div class="body"><h3>${esc(p.name)}</h3><p>${esc(p.desc)}</p><div class="meta"><span>Срок: ${esc(p.days)}</span></div>
+    <button class="more" data-info="${p.id}">Что входит</button>
+    <div class="buy"><span class="price">${money(p.price)}${p.old ? `<s>${money(p.old)}</s>` : ""}</span><button class="btn ${cart[p.id] ? "dark" : ""}" data-add="${p.id}">${cart[p.id] ? "В корзине ✓" : "В корзину"}</button></div></div></article>`).join("");
+}
+function renderCart() {
+  const ids = Object.keys(cart), n = ids.reduce((s, id) => s + cart[id], 0), sum = ids.reduce((s, id) => s + byId(id).price * cart[id], 0);
+  $("#count").textContent = n; $("#sum").textContent = money(sum); $("#checkout").disabled = !n;
+  $("#items").innerHTML = n ? ids.map((id) => { const p = byId(id); return `<div class="ci"><b>${esc(p.name)}</b><span>${money(p.price * cart[id])}</span>
+    <small>${money(p.price)} · ${esc(p.days)}</small><span class="qty"><button data-q="${id}" data-d="-1" aria-label="Меньше">−</button>${cart[id]}<button data-q="${id}" data-d="1" aria-label="Больше">+</button></span></div>`; }).join("")
+    : `<p class="empty">Корзина пуста.<br>Выбери услугу в каталоге.</p>`;
+  save("cart", cart);
+}
+const openCart = () => { $("#drawer").hidden = false; $("#shade").hidden = false; $("#closeCart").focus(); };
+const closeCart = () => { $("#drawer").hidden = true; $("#shade").hidden = true; };
+const openModal = (html) => { $("#box").innerHTML = `<button class="ib x" data-close aria-label="Закрыть">✕</button>` + html; $("#modal").hidden = false; };
+const closeModal = () => { $("#modal").hidden = true; };
+
+function info(id) {
+  const p = byId(id);
+  openModal(`<h3>${esc(p.name)}</h3><p class="hint">${esc(p.cat)} · срок ${esc(p.days)}</p><p>${esc(p.desc)}</p><b>Что входит:</b><ul>${p.inc.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><span class="price">${money(p.price)}</span><button class="btn" data-add="${p.id}" data-close>${cart[p.id] ? "Уже в корзине" : "В корзину"}</button></div>`);
+}
+function checkout() {
+  closeCart();
+  openModal(`<h3>Оформление заказа</h3><p class="hint">Оплата после согласования деталей. Я напишу тебе в течение дня.</p>
+    <form id="form" novalidate>
+      <label>Как к тебе обращаться<input id="oName" autocomplete="name" required></label>
+      <label>Как с тобой связаться<input id="oContact" placeholder="@ник в Telegram, телефон или почта" required><span class="hint">Сюда я напишу, чтобы обсудить детали.</span></label>
+      <label>Пожелания<textarea id="oNote" placeholder="Тема канала, цвета, примеры, которые нравятся, ссылка на фото…"></textarea></label>
+      <p class="error" id="err" hidden></p>
+      <button class="btn" type="submit">Подтвердить заказ · ${$("#sum").textContent}</button>
+    </form>`);
+  $("#oName").value = load("name", ""); $("#oContact").value = load("contact", "");
+  $("#form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const name = $("#oName").value.trim(), contact = $("#oContact").value.trim(), note = $("#oNote").value.trim();
+    if (!name || contact.length < 3) { $("#err").textContent = "Заполни имя и контакт, чтобы я мог тебе ответить."; $("#err").hidden = false; return; }
+    save("name", name); save("contact", contact);
+    const num = "К-" + Date.now().toString(36).slice(-5).toUpperCase();
+    const lines = Object.keys(cart).map((id) => `• ${byId(id).name} × ${cart[id]} — ${money(byId(id).price * cart[id])}`);
+    const text = `Заказ ${num}\n${lines.join("\n")}\nИтого: ${$("#sum").textContent}\n\nИмя: ${name}\nКонтакт: ${contact}${note ? `\nПожелания: ${note}` : ""}`;
+    done(num, text);
+  });
+}
+function done(num, text) {
+  const tg = SHOP.telegram.replace(/^@/, ""), mail = SHOP.email;
+  openModal(`<h3>Заказ ${esc(num)} собран</h3>
+    <p>Последний шаг — отправь его мне${tg || mail ? "" : " удобным способом"}. Текст заказа уже скопирован.</p>
+    <div class="order" id="orderText">${esc(text)}</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px">
+      ${tg ? `<a class="btn" href="https://t.me/${encodeURIComponent(tg)}" target="_blank" rel="noopener">Открыть Telegram</a>` : ""}
+      ${mail ? `<a class="btn ${tg ? "line" : ""}" href="mailto:${encodeURIComponent(mail)}?subject=${encodeURIComponent("Заказ " + num)}&body=${encodeURIComponent(text)}">Отправить на почту</a>` : ""}
+      <button class="btn line" id="copyAgain">Скопировать ещё раз</button>
+    </div>
+    ${tg ? `<p class="hint">В Telegram открой чат и вставь текст (Ctrl+V или долгое нажатие → «Вставить»).</p>` : ""}
+    ${!tg && !mail ? `<p class="hint">Контакты мастерской скоро появятся здесь.</p>` : ""}`);
+  const copy = () => navigator.clipboard.writeText(text).then(() => toast("Заказ скопирован"), () => { const r = document.createRange(); r.selectNodeContents($("#orderText")); getSelection().removeAllRanges(); getSelection().addRange(r); toast("Выдели и скопируй текст"); });
+  copy(); $("#copyAgain").onclick = copy;
+  cart = {}; renderCart(); renderGrid();
+}
+
+document.addEventListener("click", (e) => {
+  const t = e.target;
+  const f = t.closest("[data-f]"); if (f) { filter = f.dataset.f; renderFilters(); renderGrid(); return; }
+  const add = t.closest("[data-add]");
+  if (add) { const id = add.dataset.add; if (!cart[id]) { cart[id] = 1; toast("Добавлено в корзину"); } else openCart(); renderCart(); renderGrid(); }
+  const inf = t.closest("[data-info]"); if (inf) info(inf.dataset.info);
+  const q = t.closest("[data-q]"); if (q) { const id = q.dataset.q; cart[id] += +q.dataset.d; if (cart[id] <= 0) delete cart[id]; renderCart(); renderGrid(); }
+  if (t.closest("[data-close]") || t.id === "modal") closeModal();
+});
+$("#openCart").onclick = openCart; $("#closeCart").onclick = closeCart; $("#shade").onclick = closeCart; $("#checkout").onclick = checkout;
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") { closeModal(); closeCart(); } });
+$("#port").innerHTML = WORKS.map(([id, n, d]) => `<a href="https://strimsnaener-cpu.github.io/${id}/" target="_blank" rel="noopener"><i>${id}</i><b>${esc(n)}</b><small>${esc(d)}</small></a>`).join("");
+$("#year").textContent = new Date().getFullYear();
+const root = document.documentElement;
+try { const t = localStorage.getItem("kv:theme"); if (t) root.dataset.theme = t; } catch (e) {}
+$("#theme").onclick = () => { const dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches; root.dataset.theme = dark ? "light" : "dark"; try { localStorage.setItem("kv:theme", root.dataset.theme); } catch (e) {} };
+renderFilters(); renderGrid(); renderCart();
+})();
+</script>
+</body>
+</html>
